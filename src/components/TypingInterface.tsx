@@ -157,13 +157,26 @@ export function TypingInterface({
     currentWordIndexRef.current = currentWordIndex;
   }, [currentWordIndex]);
 
-  // Scroll current word into view
+  // Scroll current word into view (only vertically)
   useEffect(() => {
     if (!containerRef.current || !hasStarted) return;
     const wordElements = containerRef.current.querySelectorAll("[data-word]");
     const currentWordEl = wordElements[currentWordIndex] as HTMLElement;
     if (currentWordEl) {
-      currentWordEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const wordRect = currentWordEl.getBoundingClientRect();
+      
+      // Only scroll if word is outside visible area vertically
+      const isAbove = wordRect.top < containerRect.top;
+      const isBelow = wordRect.bottom > containerRect.bottom;
+      
+      if (isAbove || isBelow) {
+        currentWordEl.scrollIntoView({ 
+          behavior: "smooth", 
+          block: "center",
+          inline: "nearest" // Prevent horizontal scrolling
+        });
+      }
     }
   }, [currentWordIndex, hasStarted]);
 
@@ -442,7 +455,7 @@ export function TypingInterface({
       <div
         ref={containerRef}
         onClick={() => inputRef.current?.focus()}
-        className="relative cursor-text select-none max-h-[55vh] overflow-y-auto"
+        className="relative cursor-text select-none max-h-[55vh] overflow-y-auto overflow-x-hidden"
       >
         {/* Cursor */}
         {hasStarted && timeLeft > 0 && (
@@ -467,7 +480,7 @@ export function TypingInterface({
         )}
 
         {/* Words */}
-        <div className="flex flex-wrap gap-x-4 gap-y-3 font-mono text-xl sm:text-2xl leading-relaxed">
+        <div className="flex flex-wrap gap-x-4 gap-y-3 font-mono text-xl sm:text-2xl leading-relaxed break-words">
           {words.map((word, wordIndex) => {
             const wordTyped = typedChars[wordIndex] || [];
             const isCurrentWord = wordIndex === currentWordIndex;
